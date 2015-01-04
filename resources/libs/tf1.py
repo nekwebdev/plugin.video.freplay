@@ -71,7 +71,7 @@ def list_videos(channel,show_title):
         jsonvid     = json.loads(fileVideos)
         for video in jsonvid : 
             video_url=''
-            if 'watid' in video:
+            if 'watId' in video:
                 video_url=str(video['watId'])
             name=video['shortTitle'].encode('utf-8')
             image_url=video['images'][0]['url']
