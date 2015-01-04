@@ -3,6 +3,8 @@ import CommonFunctions
 common = CommonFunctions
 from xml.dom import minidom
 import globalvar
+import simplejson as json
+import xbmcaddon
 
 url_base='http://www.arte.tv/papi/tvguide-flow/sitemap/feeds/videos/F.xml' 
 
@@ -39,29 +41,23 @@ def list_shows(channel,folder):
     return shows
 
 def getVideoURL(channel,url):
-    print url
-    url=urllib2.unquote(url[url.index('videorefFileUrl')+16:]).decode('utf8')
-    xml = urllib2.urlopen(url).read()
-    xmldoc = minidom.parseString(xml)
-    itemlist = xmldoc.getElementsByTagName('video') 
-    for s in itemlist :
-        if s.attributes['lang'].value==globalvar.LANG:
-            url=s.attributes['ref'].value
-    xml = urllib2.urlopen(url).read()   
-    xmldoc = minidom.parseString(xml)     
-    urlslist = xmldoc.getElementsByTagName('urls')
-    for urls in urlslist :
-        itemlist = urls.getElementsByTagName('url') 
-        for s in itemlist :
-            if s.attributes['quality'].value==globalvar.QLTY:
-                url=s.firstChild.data
-    return url
+    url=urllib2.unquote(url)
+    results = urllib2.urlopen(url).read()
+    jsonobj = json.loads(results)
+    # Read quality from settings
+    if xbmcaddon.Addon().getSetting('video_quality') == '0':
+        quality = 'RTMP_EQ_1'
+    else:
+        quality = 'RTMP_SQ_1'
+    streamer = jsonobj['videoJsonPlayer']['VSR'][quality]['streamer']
+    endpoint = jsonobj['videoJsonPlayer']['VSR'][quality]['url']
+    return streamer + endpoint
     
 def list_videos(channel,show_title):
     videos=[]
-    xml = open(globalvar.CATALOG_ARTE).read()	
+    xml = open(globalvar.CATALOG_ARTE).read()
     url=common.parseDOM(xml, "url")
-    for i in range(0, len(url)):      
+    for i in range(0, len(url)):
         video_url=''
         name=''
         image_url=''
@@ -70,37 +66,32 @@ def list_videos(channel,show_title):
         views=''
         desc=''
         rating=''
-        tmpTab=common.parseDOM(url[i], "video:publication_date")
-        if len(tmpTab)>0:
-            date=tmpTab[0][:10]
-        tmpTab=common.parseDOM(url[i], "video:duration")
-        if len(tmpTab)>0:
-            duration=tmpTab[0]
-        tmpTab=common.parseDOM(url[i], "video:view_count")
-        if len(tmpTab)>0:
-            views=tmpTab[0]
-        tmpTab=common.parseDOM(url[i], "video:rating")
-        if len(tmpTab)>0:
-            rating=tmpTab[0]
-        tmptab=common.parseDOM(url[i], 'video:player_loc allow_embed="yes"')
-        if len(tmpTab)>0:
-            print 'hi' + len(tmptab)
-            video_url=tmpTab[0]
-        start=video_url.find('MasterPlugin.feedurl=')
-        print start
-        print video_url
-        #video_url.decode('utf-8')
-        descriptionTab=common.parseDOM(url[i], "video:description")
-        if len(descriptionTab)>0:
-            name=fix_text(descriptionTab[0])
-            desc=fix_text(descriptionTab[0])
-        picTab=common.parseDOM(url[i], "video:thumbnail_loc")
-        if len(picTab)>0:
-            image_url=picTab[0]
         titleTab=common.parseDOM(url[i], "video:title")
         if len(titleTab)>0:
             title=fix_text(titleTab[0])
-        if(title==show_title):       
+        if(title==show_title):
+            tmpTab=common.parseDOM(url[i], "video:publication_date")
+            if len(tmpTab)>0:
+                date=tmpTab[0][:10]
+            tmpTab=common.parseDOM(url[i], "video:duration")
+            if len(tmpTab)>0:
+                duration=tmpTab[0]
+            tmpTab=common.parseDOM(url[i], "video:view_count")
+            if len(tmpTab)>0:
+                views=tmpTab[0]
+            tmpTab=common.parseDOM(url[i], "video:rating")
+            if len(tmpTab)>0:
+                rating=tmpTab[0]
+            start = url[i].find('MasterPlugin.feedurl=')
+            end = url[i].find('&amp;MasterPlugin.required=')
+            video_url = url[i][start+21:end]
+            descriptionTab=common.parseDOM(url[i], "video:description")
+            if len(descriptionTab)>0:
+                name=fix_text(descriptionTab[0])
+                desc=fix_text(descriptionTab[0])
+            picTab=common.parseDOM(url[i], "video:thumbnail_loc")
+            if len(picTab)>0:
+                image_url=picTab[0]
             infoLabels={ "Title": name,"Plot":desc,"Aired":date,"Duration": duration, "Year":date[:4]}   
             videos.append( [channel, video_url, name, image_url,infoLabels,'play'] )
     return videos
