@@ -54,6 +54,7 @@ def init():
            'france4',
            'france5',
            'franceo',
+           'gulli',
            'tmc',
            'nt1'
            ]
