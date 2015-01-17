@@ -9,7 +9,11 @@ url_shows={'tf1':'http://api.tf1.fr/tf1-programs/ipad/',
              'tmc':'http://api.tmc.tv/tmc-programs/android-smartphone/',
              'nt1':'http://api.nt1.tv/nt1-programs/android-smartphone/'
             }
-url_videos={'tf1':'http://api.tf1.fr/tf1-vods/ipad/integral/0/program_id/',
+url_videos={'tf1':'http://api.tf1.fr/tf1-vods/ipad/integral/1/program_id/',
+             'tmc':'http://api.tmc.tv/tmc-vods/ipad/integral/1/program_id/',
+             'nt1':'http://api.nt1.tv/nt1-vods/ipad/integral/1/program_id/'
+            }
+url_videos2={'tf1':'http://api.tf1.fr/tf1-vods/ipad/integral/0/program_id/',
              'tmc':'http://api.tmc.tv/tmc-vods/ipad/integral/0/program_id/',
              'nt1':'http://api.nt1.tv/nt1-vods/ipad/integral/0/program_id/'
             }
@@ -76,7 +80,24 @@ def list_videos(channel,show_title):
             name=video['shortTitle'].encode('utf-8')
             image_url=video['images'][0]['url']
             date=video['publicationDate'][:10]
-            duration=video['duration']
+            duration=int(video['duration']) / 60
+            views=''
+            desc=video['longTitle']
+            rating=''
+
+            infoLabels={ "Title": name,"Plot":desc,"Aired":date,"Duration": duration, "Year":date[:4]}
+            videos.append( [channel, video_url, name, image_url,infoLabels,'play'] )
+
+        fileVideos=urllib2.urlopen(url_videos2[channel] + str(show_title)).read()
+        jsonvid     = json.loads(fileVideos)
+        for video in jsonvid : 
+            video_url=''
+            if 'watId' in video:
+                video_url=str(video['watId'])
+            name=video['shortTitle'].encode('utf-8')
+            image_url=video['images'][0]['url']
+            date=video['publicationDate'][:10]
+            duration=int(video['duration']) / 60
             views=''
             desc=video['longTitle']
             rating=''
